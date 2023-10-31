@@ -1,9 +1,13 @@
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
@@ -15,6 +19,7 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import javax.swing.text.DateFormatter;
 
 public class DBManage extends JFrame {
 
@@ -41,6 +46,14 @@ public class DBManage extends JFrame {
     public Connection conn;
     public PreparedStatement ps;
     public ResultSet r;
+
+    //Insert구문
+    String managerSsn[] = {"null", "333445555", "987654321", "888665555"};
+    String month[] = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"};
+    String day[] = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
+        "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25",
+        "26", "27",
+        "28", "29", "30", "31"};
 
 
     public DBManage() {
@@ -160,10 +173,19 @@ public class DBManage extends JFrame {
         ssnBox.add(ssn);
         insertBox.add(ssnBox);
 
+//        Box bdateBox = Box.createHorizontalBox();
+//        JTextField bDate = new JTextField(20);
+//        bdateBox.add(new JLabel("생년월일 <YYYY-MM-DD> : "));
+//        bdateBox.add(bDate);
+//        insertBox.add(bdateBox);
         Box bdateBox = Box.createHorizontalBox();
-        JTextField bDate = new JTextField(20);
+        JTextField bYear = new JTextField(20);
+        JComboBox<String> bMonth = new JComboBox<>(month);
+        JComboBox<String> bDay = new JComboBox<>(day);
         bdateBox.add(new JLabel("생년월일 : "));
-        bdateBox.add(bDate);
+        bdateBox.add(bYear);
+        bdateBox.add(bMonth);
+        bdateBox.add(bDay);
         insertBox.add(bdateBox);
 
         Box addressBox = Box.createHorizontalBox();
@@ -184,8 +206,13 @@ public class DBManage extends JFrame {
         salaryBox.add(salary);
         insertBox.add(salaryBox);
 
+//        Box superSsnBox = Box.createHorizontalBox();
+//        JTextField superSsn = new JTextField(20);
+//        superSsnBox.add(new JLabel("상사 Ssn : "));
+//        superSsnBox.add(superSsn);
+//        insertBox.add(superSsnBox);
         Box superSsnBox = Box.createHorizontalBox();
-        JTextField superSsn = new JTextField(20);
+        JComboBox<String> superSsn = new JComboBox<String>(managerSsn);
         superSsnBox.add(new JLabel("상사 Ssn : "));
         superSsnBox.add(superSsn);
         insertBox.add(superSsnBox);
@@ -406,13 +433,15 @@ public class DBManage extends JFrame {
                 //새로운 부서가 추가되는 경우 : dept배열 수정
                 //Ssn이 입력이 안된 경우, 추가하지 않고 팝업으로 알림
                 try {
-                    String insertStmt = "INSERT INTO EMPLOYEE(Fname, Minit, Lname, Ssn, Bdate, Address, Sex, Salary, Super_ssn, Dno) VALUES(?,?,?,?,?,?,?,?,?,?)";
+                    String insertStmt = "INSERT INTO EMPLOYEE(Fname, Minit, Lname, Ssn, Bdate, Address, Sex, Salary, Super_ssn, Dno, created, modified) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)";
                     ps = conn.prepareStatement(insertStmt);
                     ps.setString(1, fName.getText());
                     ps.setString(2, mInit.getText());
                     ps.setString(3, lName.getText());
                     ps.setString(4, ssn.getText());
-                    ps.setString(5, bDate.getText());
+                    String bDate = bYear.getText() + (String) bMonth.getSelectedItem()
+                        + (String) bDay.getSelectedItem();
+                    ps.setString(5, bDate);
                     ps.setString(6, address.getText());
                     if ((String) sex.getSelectedItem() == "여성") {
                         ps.setString(7, "F");
@@ -420,7 +449,7 @@ public class DBManage extends JFrame {
                         ps.setString(7, "M");
                     }
                     ps.setString(8, salary.getText());
-                    ps.setString(9, superSsn.getText());
+                    ps.setString(9, (String) superSsn.getSelectedItem());
                     if ((String) dName.getSelectedItem() == "Research") {
                         ps.setInt(10, 5);
                     } else if ((String) dName.getSelectedItem() == "Administration") {
@@ -428,17 +457,47 @@ public class DBManage extends JFrame {
                     } else if ((String) dName.getSelectedItem() == "Headquarters") {
                         ps.setInt(10, 1);
                     }
-                    if(ssn.getText().isEmpty()){
-                        JOptionPane.showMessageDialog(null, "Ssn은 필수로 작성해주세요!" ,"ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+                    ps.setTimestamp(11, Timestamp.valueOf(java.time.LocalDateTime.now()));
+                    ps.setTimestamp(12, Timestamp.valueOf(java.time.LocalDateTime.now()));
+
+                    /** 예외처리 **/
+                    if (ssn.getText().isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Ssn은 필수로 작성해주세요!", "ERROR_MESSAGE",
+                            JOptionPane.ERROR_MESSAGE);
+                        return;
+                    } else if (ssn.getText().length() != 9) {
+                        JOptionPane.showMessageDialog(null, "Ssn은 9자리 입니다. 다시 작성해주세요!",
+                            "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    } else if (fName.getText().isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Fname은 필수로 작성해주세요!", "ERROR_MESSAGE",
+                            JOptionPane.ERROR_MESSAGE);
+                        return;
+                    } else if (lName.getText().isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Lname은 필수로 작성해주세요!", "ERROR_MESSAGE",
+                            JOptionPane.ERROR_MESSAGE);
+                        return;
+                    } else if (bYear.getText().length() != 4
+                        || Integer.parseInt(bYear.getText()) > 2023) {
+                        JOptionPane.showMessageDialog(null,
+                            bYear.getText() + "는 잘못된 Year 형태입니다. 다시 작성해주세요!", "ERROR_MESSAGE",
+                            JOptionPane.ERROR_MESSAGE);
+                        return;
+                    } else if (salary.getText().isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Salary는 필수로 작성해주세요!", "ERROR_MESSAGE",
+                            JOptionPane.ERROR_MESSAGE);
+                        return;
+
                     } else {
                         ps.executeUpdate();
                         JOptionPane.showMessageDialog(null, "직원 추가 완료!");
                     }
-
-
                 } catch (SQLException e1) {
-                    System.out.println("sqlException: " + e1);
-                    e1.printStackTrace();
+                    if (e1.getMessage().contains("PRIMARY")) {
+                        JOptionPane.showMessageDialog(null,
+                            ssn.getText() + "는 중복된 Ssn입니다. 다시 작성해주세요!", "ERROR_MESSAGE",
+                            JOptionPane.ERROR_MESSAGE);
+                    }
                 }
 
             }
