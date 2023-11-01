@@ -6,11 +6,14 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Vector;
 
 public class DBManage extends JFrame{
+    public Connection conn;
     JComboBox<String> selAttributes;
     JComboBox<String> selAttributeForUpdate;
     JComboBox<String> selGender;
@@ -28,11 +31,34 @@ public class DBManage extends JFrame{
     String title[] = {"선택", "소속부서","이름", "주민번호(Ssn)", "성별","생년월일", "주소", "임금", "상사(Supervisor)"};
     //결과에서 사용할 Table의 열이름
     String resCnt = "0";
+
+    DefaultTableModel model;
+    JTextField totalCount;
     public DBManage(){
         //창 이름 설정
         super("Information Retrival System");
 
         setLayout(new BorderLayout());
+
+        // DB연결
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver"); // JDBC 드라이버 연결
+
+            String user = "user93";
+            String pwd = "1234"; // 비밀번호 입력
+            String dbname = "companyDB";
+            String url = "jdbc:mysql://localhost:3306/" + dbname + "?serverTimezone=UTC";
+
+            conn = DriverManager.getConnection(url, user, pwd);
+            System.out.println("정상적으로 연결되었습니다.");
+
+        } catch (SQLException e1) {
+            System.err.println("연결할 수 없습니다.");
+            e1.printStackTrace();
+        } catch (ClassNotFoundException e1) {
+            System.err.println("드라이버를 로드할 수 없습니다.");
+            e1.printStackTrace();
+        }
 
         //검색범위
         Box scopeBox = Box.createHorizontalBox();
@@ -49,19 +75,27 @@ public class DBManage extends JFrame{
 
         //검색항목(Checkbox)
         Box chkBox = Box.createHorizontalBox();
-        JCheckBox checkName = new JCheckBox("이름(Name)");
-        JCheckBox checkSsn = new JCheckBox("주민번호(Ssn)");
-        JCheckBox checkBdate = new JCheckBox("생년월일(Bdate)");
-        JCheckBox checkAddress = new JCheckBox("주소(Address)");
-        JCheckBox checkSex = new JCheckBox("성별(Sex)");
-        JCheckBox checkSalary = new JCheckBox("임금(Salary)");
-        JCheckBox checkSupervisor = new JCheckBox("상사(Supervisor)");
-        JCheckBox checkDepartment = new JCheckBox("부서(Department)");
+        JCheckBox checkName = new JCheckBox("이름(Name)", true);
+        JCheckBox checkSsn = new JCheckBox("주민번호(Ssn)", true);
+        JCheckBox checkBdate = new JCheckBox("생년월일(Bdate)", true);
+        JCheckBox checkAddress = new JCheckBox("주소(Address)", true);
+        JCheckBox checkSex = new JCheckBox("성별(Sex)", true);
+        JCheckBox checkSalary = new JCheckBox("임금(Salary)", true);
+        JCheckBox checkSupervisor = new JCheckBox("상사(Supervisor)", true);
+        JCheckBox checkDepartment = new JCheckBox("부서(Department)", true);
         JButton searchBtn = new JButton("검색");
+
         //Box에 CheckBox들 추가
-        chkBox.add(checkName);chkBox.add(checkSsn);chkBox.add(checkBdate);
-        chkBox.add(checkAddress);chkBox.add(checkSex);chkBox.add(checkSalary);
-        chkBox.add(checkSupervisor);chkBox.add(checkDepartment);chkBox.add(searchBtn);
+        chkBox.add(checkName);
+        chkBox.add(checkSsn);
+        chkBox.add(checkBdate);
+        chkBox.add(checkAddress);
+        chkBox.add(checkSex);
+        chkBox.add(checkSalary);
+        chkBox.add(checkSupervisor);
+        chkBox.add(checkDepartment);
+        chkBox.add(searchBtn);
+
         //Box를 Pannel에 추가 & Box 이름 설정
         JPanel chkBoxPanel = new JPanel(new BorderLayout());
         chkBoxPanel.setBorder(new TitledBorder(new EtchedBorder(), "검색 항목"));
@@ -323,7 +357,7 @@ public class DBManage extends JFrame{
                 //기존테이블 삭제
                 resultBox.remove(0);
                 //예시 테이블 - 제일 앞에는 false로 하고 열에 맞추어 데이터 삽입
-                DefaultTableModel model = new DefaultTableModel(new Object[][]{
+                model = new DefaultTableModel(new Object[][]{
                         {false, "Item 1"},
                         {true, "Item 2"},
                         {false, "Item 3"},
@@ -348,7 +382,38 @@ public class DBManage extends JFrame{
         //삭제 버튼을 누르는 경우
         delBtn.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
+                Vector<String> del_ssn = new Vector<String>();
 
+                try {
+                    // ssn 선택 확인
+                    int columnAt = model.findColumn("주민번호(Ssn)");
+                    if (columnAt != -1) {
+                        for (int i = 0; i < resTable.getRowCount(); i++) {
+                            if (resTable.getValueAt(i, 0) == Boolean.TRUE) {
+                                del_ssn.add((String)resTable.getValueAt(i, columnAt));
+                            }
+                        }
+                        // db에서 삭제
+                        for (int i = 0; i < del_ssn.size(); i++) {
+                            String del_Statement = "DELETE FROM EMPLOYEE WHERE Ssn=" + del_ssn.get(i);
+                            PreparedStatement p = conn.prepareStatement(del_Statement);
+                            p.executeUpdate();
+                        }
+
+                        // 결과 화면 삭제 ( 추가 작업 )
+                        for (int i = 0; i < del_ssn.size(); i++) {
+                            for (int k = 0; k < model.getRowCount(); k++) {
+                                if (resTable.getValueAt(k, 0) == Boolean.TRUE) {
+                                    model.removeRow(k);
+                                    totalCount.setText(String.valueOf(resTable.getRowCount()));
+                                }
+                            }
+                        }
+                    } else JOptionPane.showMessageDialog(null, "삭제 작업을 진행하시려면 SSN 항목을 체크해주세요.");
+                } catch (SQLException e1) {
+                    System.out.println("!!!! err : " + e1);
+                    e1.printStackTrace();
+                }
             }
         });
         //수정 버튼을 누르는 경우
