@@ -1,19 +1,34 @@
-import java.text.DecimalFormat;
-import java.util.Vector;
-import javax.swing.*;
-import javax.swing.border.EtchedBorder;
-import javax.swing.border.TitledBorder;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.sql.*;
+import java.util.Vector;
+import javax.swing.Box;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.border.EtchedBorder;
+import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 
 public class DBManage extends JFrame {
 
@@ -25,8 +40,8 @@ public class DBManage extends JFrame {
     JComboBox<String> selDept;
     JComboBox<String> selDeptForUpdate;
     JTextField userIn;
-    JTextField newDname;//삽입에서 신규 부서 이름
-    JTextField newDno;//삽입에서 신규 부서 번호
+    JTextField newDname; //삽입에서 신규 부서 이름
+    JTextField newDno; //삽입에서 신규 부서 번호
     JTextField userInForUpdate;
     String attributes[] = {"전체", "부서", "이름", "주민번호", "성별", "생년월일", "주소", "임금", "상사"};
     String transAttribute[] = {"*", "Dname", "Name", "Ssn", "Sex", "Bdate", "Address", "Salary",
@@ -64,12 +79,12 @@ public class DBManage extends JFrame {
 
         setLayout(new BorderLayout());
 
-        //------------------------DB 연결----------------------------------------------------
+        //DB 연결----------------------------------------------------------------------------
         try {
             Class.forName("com.mysql.cj.jdbc.Driver"); // JDBC 드라이버 연결
-
+            /** 연결 DB로 변경 **/
             String user = "root";
-            String pwd = "root"; // 비밀번호 입력
+            String pwd = "root";
             String dbname = "company";
             String url = "jdbc:mysql://localhost:601/" + dbname + "?serverTimezone=UTC";
 
@@ -83,9 +98,9 @@ public class DBManage extends JFrame {
             System.err.println("드라이버를 로드할 수 없습니다.");
             e1.printStackTrace();
         }
-        //-----------------------------------------------------------------------------------
+        //=================================================================================
 
-        //검색범위-----------------------------------
+        //검색범위--------------------------------------------------------------------------
         Box scopeBox = Box.createHorizontalBox();
         JLabel scopeTxt = new JLabel("범위 설정");
         selAttributes = new JComboBox<String>(attributes);
@@ -97,9 +112,9 @@ public class DBManage extends JFrame {
         JPanel scopePanel = new JPanel(new BorderLayout());
         scopePanel.setBorder(new TitledBorder(new EtchedBorder(), "검색 범위"));
         scopePanel.add(scopeBox, BorderLayout.CENTER);
-        //==================================================
+        //=================================================================================
 
-        //검색항목(Checkbox)----------------------------------------
+        //검색항목(Checkbox)----------------------------------------------------------------
         Box chkBox = Box.createHorizontalBox();
         JCheckBox checkSelAll = new JCheckBox("전체 선택");
         JCheckBox checkName = new JCheckBox("이름(Name)");
@@ -126,9 +141,9 @@ public class DBManage extends JFrame {
         JPanel chkBoxPanel = new JPanel(new BorderLayout());
         chkBoxPanel.setBorder(new TitledBorder(new EtchedBorder(), "검색 항목"));
         chkBoxPanel.add(chkBox, BorderLayout.CENTER);
-        //=============================================================================
+        //=================================================================================
 
-        //검색결과 테이블로 제공 --------------------------------------------
+        //검색결과 테이블로 제공--------------------------------------------------------------
         Box resultBox = Box.createHorizontalBox();
         //initData - 초기 Loading시에만 없다는 것을 보여주기 위해
         model = new DefaultTableModel(new Object[][]{
@@ -149,9 +164,9 @@ public class DBManage extends JFrame {
         JPanel resTablePanel = new JPanel(new BorderLayout());
         resTablePanel.setBorder(new TitledBorder(new EtchedBorder(), "검색 결과"));
         resTablePanel.add(resultBox, BorderLayout.CENTER);
-        //=====================================================
+        //=================================================================================
 
-        //검색 결과 수 & 선택한 직원(이름, 수)------------------------
+        //검색 결과 수 & 선택한 직원(이름, 수)--------------------------------------------------
         Box resCountBox = Box.createVerticalBox();
         JLabel cntTxt = new JLabel("검색 결과 : 0");
         JLabel resTxt = new JLabel("선택한 직원 : ");
@@ -166,7 +181,8 @@ public class DBManage extends JFrame {
         resCountPanel.add(resCountBox, BorderLayout.WEST);
         //=================================================================================
 
-        //새로운 Tuple 삽입하기 - fName, minit, lName, ssn, bDate, address,sex,salary,superSsn, dno 변수 이용
+        //새로운 Tuple 삽입하기
+        //└ fName, minit, lName, ssn, bDate, address,sex,salary,superSsn, dno 변수 이용-----
         Box insertBox = Box.createVerticalBox();
 
         Box fnameBox = Box.createHorizontalBox();
@@ -240,7 +256,7 @@ public class DBManage extends JFrame {
         insertPanel.add(insertBox, BorderLayout.WEST);
         //========================================================================================
 
-        //Update문----------------------------- 삭제 예정
+        //Update문 -------------------------------------------------------------------------------
         Box updateBox = Box.createHorizontalBox();
         JLabel updateTxt = new JLabel("데이터 수정 : ");
         JLabel updateTmpTxt = new JLabel("속성을 선택하고 수정하세요");
@@ -253,9 +269,9 @@ public class DBManage extends JFrame {
         JPanel updatePanel = new JPanel(new BorderLayout());
         updatePanel.setBorder(new TitledBorder(new EtchedBorder(), "선택 항목 Update"));
         updatePanel.add(updateBox, BorderLayout.CENTER);
-        //================================================
+        //========================================================================================
 
-        //메인프레임에 패널들 붙이기-----------------
+        //메인프레임에 패널들 붙이기 -----------------------------------------------------------------
         Box center = Box.createVerticalBox();
         center.add(scopePanel);
         center.add(chkBoxPanel);
@@ -264,9 +280,9 @@ public class DBManage extends JFrame {
         center.add(updatePanel);
         center.add(insertPanel);
         add(center, BorderLayout.CENTER);
-        //=====================================
+        //========================================================================================
 
-        // 검색범위 - 속성에 따라 입력 받는 형식 결정 -----------------------
+        // 검색범위 - 속성에 따라 입력 받는 형식 결정 --------------------------------------------------
         selAttributes.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String attribute = selAttributes.getSelectedItem().toString();
@@ -323,23 +339,15 @@ public class DBManage extends JFrame {
                 scopeBox.repaint();
             }
         });
-        //======================================================================
+        //========================================================================================
 
-        //속성에 따라 입력받는 형식 결정 - Update--------------------삭제예정-----------------
+        //속성에 따라 입력받는 형식 결정 - Update -----------------------------------------------------
         selAttributeForUpdate.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String attribute = selAttributeForUpdate.getSelectedItem().toString();
                 updateBox.remove(2);
-                //ComboBox로 추가 입력을 받아야 하는 속성 : 부서, 성별
-                if (attribute.equals("소속부서")) {
-                    selDeptForUpdate = new JComboBox<String>(dept);
-                    updateBox.add(selDeptForUpdate, 2);
-                } else if (attribute.equals("성별")) {
-                    selGenderForUpdate = new JComboBox<String>(gender);
-                    updateBox.add(selGenderForUpdate, 2);
-                }
-                //"전체를 할 경우 - Text만 출력
-                else if (attribute.equals("선택")) {
+                //전체를 할 경우 - Text만 출력
+                if (attribute.equals("선택")) {
                     JLabel msgUpdate = new JLabel("속성을 선택하세요");
                     updateBox.add(msgUpdate, 2);
                 } else {
@@ -351,29 +359,10 @@ public class DBManage extends JFrame {
                 updateBox.repaint();
             }
         });
-        //==============================================================
+        //========================================================================================
 
-        //신규부서를 입력하는 경우 - 신규부서이면 부서명과 부서번호를 받음 - 삭제예정
-        dName.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String deptName = dName.getSelectedItem().toString();
 
-                int componentCnt = dNameBox.getComponentCount();
-                // 체크 및 마지막 2개 컴포넌트 제거
-                if (componentCnt == 5) {
-                    dNameBox.remove(4);
-                    dNameBox.remove(3);
-                    dNameBox.remove(2);
-                }
-
-                //Update dNameBox
-                dNameBox.revalidate();
-                dNameBox.repaint();
-            }
-        });
-        //====================================================================
-
-        // 전체 선택, 해제
+        // 전체 선택, 해제 -------------------------------------------------------------------------
         checkSelAll.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -388,9 +377,10 @@ public class DBManage extends JFrame {
                 checkSelAll.setText(checkSelAll.isSelected() ? "전체해제" : "전체선택");
             }
         });
+        //========================================================================================
 
-        //검색버튼을 누르는 경우 - search(조건에 맞게 검색을 하고 모든 열에 대한 정보를 가져옴)
-        //검색시 마다 체크박스 초기화 및 ssn정보 초기화
+        //검색버튼을 누르는 경우 - search(조건에 맞게 검색을 하고 모든 열에 대한 정보를 가져옴) --------------
+        //검색시 마다 체크박스 초기화 및 ssn정보 초기화 -------------------------------------------------
         searchBtn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 //사용자 입력
@@ -401,14 +391,14 @@ public class DBManage extends JFrame {
                 List<String> userSelect = new ArrayList<String>();
 
                 String attribute = selAttributes.getSelectedItem().toString();
-                //검색조건으로 설정한 속성 찾음 ========= 확인 필요
+                //검색조건으로 설정한 속성 찾음
                 for (int i = 0; i < attributes.length; i++) {
                     if (attribute.equals(attributes[i])) {
                         userSelScope = transAttribute[i];
                         break;
                     }
                 }
-                //chkBox결과 가져오기----------------------
+                //chkBox결과 가져오기
                 userHead.add("선택");
                 if (checkName.isSelected()) {
                     userHead.add("이름(Name)");
@@ -442,9 +432,9 @@ public class DBManage extends JFrame {
                     userHead.add("부서(Department)");
                     userSelect.add("Dname");
                 }
-                //---------------------------------------
+                //--------------------------------------------------------------------------------
 
-                //쿼리 생성---------------------------------------------------
+                //쿼리 생성------------------------------------------------------------------------
                 String stmt = "SELECT e.Fname, e.Minit, e.Lname, e.Ssn, e.Bdate, e.Address, e.Sex, e.Salary,";
                 stmt += " s.Fname AS sFname, s.Minit AS sMinit, s.Lname AS sLname, Dname ";
                 stmt += "FROM employee e left outer join employee s on e.super_ssn=s.ssn, department WHERE e.Dno=Dnumber and ";
@@ -507,9 +497,8 @@ public class DBManage extends JFrame {
                 ;
                 //쿼리 마무리
                 stmt += ";";
-                //쿼리 생성 결과 확인
-                //System.out.println(stmt);
-                //-----------------------------------------------------------------
+
+                //--------------------------------------------------------------------------------
                 int cntRes = 0;
                 //DB에 쿼리를 요청하고, 쿼리 결과를 가져오기
                 try {
@@ -551,7 +540,7 @@ public class DBManage extends JFrame {
                                 tmpSuper += " ";
                                 tmpSuper += resultSet.getString("sLname");
 
-                                if(tmpSuper.substring(0,4).equals("null")){
+                                if (tmpSuper.substring(0, 4).equals("null")) {
                                     tmpSuper = "None";
                                 }
 
@@ -577,10 +566,10 @@ public class DBManage extends JFrame {
                     System.out.println("SQL 예외 발생: " + ex.getMessage());
                 }
 
-                // 테이블 모델 생성
                 //기존테이블 삭제
                 resultBox.remove(0);
 
+                //테이블 모델 생성
                 resTable = new JTable(model);
                 resTable.getColumnModel().getColumn(0).setCellRenderer(new CheckBoxRenderer());
                 resTable.getColumnModel().getColumn(0).setCellEditor(new CheckBoxEditor());
@@ -618,9 +607,9 @@ public class DBManage extends JFrame {
 
             }
         });
-        //==========================================================================================
+        //========================================================================================
 
-        //삭제 버튼을 누르는 경우
+        //삭제 버튼을 누르는 경우 --------------------------------------------------------------------
         delBtn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 Vector<String> del_ssn = new Vector<String>();
@@ -640,6 +629,7 @@ public class DBManage extends JFrame {
                                 "DELETE FROM EMPLOYEE WHERE Ssn=" + del_ssn.get(i);
                             PreparedStatement p = conn.prepareStatement(del_Statement);
                             p.executeUpdate();
+                            JOptionPane.showMessageDialog(null, "직원 삭제 완료!");
                         }
 
                         // 결과 화면 삭제 ( 추가 작업 )
@@ -659,16 +649,17 @@ public class DBManage extends JFrame {
                         JOptionPane.showMessageDialog(null, "삭제 작업을 진행하시려면 SSN 항목을 체크해주세요.");
                     }
                 } catch (SQLException e1) {
-                    System.out.println("!!!! err : " + e1);
                     e1.printStackTrace();
                 }
             }
         });
-        //수정 버튼을 누르는 경우
+        //========================================================================================
+
+        //수정 버튼을 누르는 경우 -------------------------------------------------------------------
         updateBtn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 Vector<String> update_ssn = new Vector<String>();
-                try{
+                try {
                     String attribute = selAttributeForUpdate.getSelectedItem().toString();
                     if (attribute.equals("이름")) { /** 이름 수정이 어떻게 진행될지 얘기해봐야할듯 **/
                         for (int i = 0; i < resTable.getRowCount(); i++) {
@@ -676,14 +667,14 @@ public class DBManage extends JFrame {
                                 update_ssn.add((String) resTable.getValueAt(i, 2));
                                 String updateName = userInForUpdate.getText();
                                 String[] updateNameArr = userInForUpdate.getText().split(" ");
-                                if(updateNameArr.length == 3 && updateNameArr[1].length() == 1){
+                                if (updateNameArr.length == 3 && updateNameArr[1].length() == 1) {
                                     resTable.setValueAt(updateName, i, 1);
                                 } else {
-                                    JOptionPane.showMessageDialog(null, "올바른 이름 형식으로 입력해주세요. (Fname Minit Lname)", "ERROR_MESSAGE",
+                                    JOptionPane.showMessageDialog(null,
+                                        "올바른 이름 형식으로 입력해주세요. (Fname Minit Lname)", "ERROR_MESSAGE",
                                         JOptionPane.ERROR_MESSAGE);
                                     return;
                                 }
-
                             }
                         }
                         for (int i = 0; i < update_ssn.size(); i++) {
@@ -693,7 +684,7 @@ public class DBManage extends JFrame {
                             String fName = "";
                             String mInit = "";
                             String lName = "";
-                            if(updateName.length == 3 && updateName[1].length() == 1){
+                            if (updateName.length == 3 && updateName[1].length() == 1) {
                                 fName = updateName[0];
                                 mInit = updateName[1];
                                 lName = updateName[2];
@@ -701,7 +692,8 @@ public class DBManage extends JFrame {
                                 ps.setString(2, mInit);
                                 ps.setString(3, lName);
                             } else {
-                                JOptionPane.showMessageDialog(null, "올바른 이름 형식으로 입력해주세요. (Fname Minit Lname)", "ERROR_MESSAGE",
+                                JOptionPane.showMessageDialog(null,
+                                    "올바른 이름 형식으로 입력해주세요. (Fname Minit Lname)", "ERROR_MESSAGE",
                                     JOptionPane.ERROR_MESSAGE);
                                 return;
                             }
@@ -747,13 +739,15 @@ public class DBManage extends JFrame {
                         JOptionPane.showMessageDialog(null, "선택한 직원의 임금 갱신 완료!");
                     }
 
-                }catch (Exception e1) {
+                } catch (Exception e1) {
                     e1.printStackTrace();
                 }
 
             }
         });
-        //신규정보추가
+        //========================================================================================
+
+        //신규정보추가 -----------------------------------------------------------------------------
         insertBtn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 //새로운 부서가 추가되는 경우 : dept배열 수정
@@ -827,6 +821,7 @@ public class DBManage extends JFrame {
                 }
             }
         });
+        //========================================================================================
 
         //창 크기 설정
         setSize(1200, 900);
