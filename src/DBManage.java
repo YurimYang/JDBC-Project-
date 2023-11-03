@@ -1177,11 +1177,20 @@ public class DBManage extends JFrame {
                     if (attribute.equals("소속부서")) {
                         for (int i = 0; i < resTable.getRowCount(); i++) {
                             if (resTable.getValueAt(i, 0) == Boolean.TRUE) {
-                                update_ssn.add((String) resTable.getValueAt(i, 2));
-                                String updateDepartment = (String) selDeptForUpdate.getSelectedItem();
-                                resTable.setValueAt(updateDepartment, i, 8);
+                                System.out.println((String) resTable.getValueAt(i, 2));
+                                if(resTable.getValueAt(i, 2).equals("333445555") ||
+                                    resTable.getValueAt(i, 2).equals("987654321") ||
+                                    resTable.getValueAt(i, 2).equals("888665555")) {
+                                    JOptionPane.showMessageDialog(null, "Manager는 소속부서를 변경할 수 없습니다. 다시 선택해주세요.",
+                                        "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+                                }else {
+                                    update_ssn.add((String) resTable.getValueAt(i, 2));
+                                    String updateDepartment = (String) selDeptForUpdate.getSelectedItem();
+                                    resTable.setValueAt(updateDepartment, i, 8);
+                                }
                             }
                         }
+                        System.out.println(update_ssn.size());
                         for (int i = 0; i < update_ssn.size(); i++) {
                             String updateStmt = "UPDATE EMPLOYEE SET Dno = ? WHERE Ssn = ?";
                             ps = conn.prepareStatement(updateStmt);
@@ -1215,7 +1224,7 @@ public class DBManage extends JFrame {
                             ps.setString(2, String.valueOf(update_ssn.get(i)));
                             ps.executeUpdate();
                         }
-                        JOptionPane.showMessageDialog(null, "선택한 직원의 이름 갱신 완료!");
+                        JOptionPane.showMessageDialog(null, "선택한 갱신가능 직원의 이름 갱신 완료!");
                     } else if (attribute.equals("주소")) {
                         for (int i = 0; i < resTable.getRowCount(); i++) {
                             if (resTable.getValueAt(i, 0) == Boolean.TRUE) {
